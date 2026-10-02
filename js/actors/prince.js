@@ -473,7 +473,7 @@ export class Prince extends Actor {
       this.handPotion.scale.setScalar(0.8);
       this.handPotion.rotation.x = Math.PI;
       this.handPotion.position.set(0, -0.1, 0.05);
-      this.char.rHand.add(this.handPotion);
+      this.char.j.rw.add(this.handPotion);
       this.game.sfx('pick', this);
     }
     if (this.taken && this.handPotion) {

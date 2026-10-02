@@ -340,7 +340,8 @@ export const SCRIPTS = {
     },
     onEnemyDeath(g, e) {
       if (e.type !== 'jaffar') return;
-      g.timerStopped = true;
+      // como en el original, al caer Jaffar el reloj se detiene para el resto de la partida
+      g.timerStopped = true; g.run.clockStopped = true;
       flash(g, 1, 1, 1, 1);
       g.audio.sting('victory');
       g.hitStop = 0.6;

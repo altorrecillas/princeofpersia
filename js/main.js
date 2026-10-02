@@ -89,6 +89,7 @@ class App {
     this.touch.show(playing && touchOn);
     $('btnPause').style.display = playing ? '' : 'none';
     input.enabled = playing || name === 'cutscene';
+    this.updateRotate();
     if (name === 'title') {
       this.refreshTitle();
       audio.setMusic('title');
@@ -250,7 +251,7 @@ class App {
       this.showScreen('play');
       const def = LEVELS.find((l) => l.id === id);
       if (def && def.num) {
-        saveJSON(SAVE_KEY, { level: id, timeLeft: this.game.run.timeLeft, maxHp: this.game.run.maxHp, hasSword: this.game.run.hasSword, deaths: this.game.run.deaths, started: this.game.run.started });
+        saveJSON(SAVE_KEY, { level: id, timeLeft: this.game.run.timeLeft, maxHp: this.game.run.maxHp, hasSword: this.game.run.hasSword, deaths: this.game.run.deaths, started: this.game.run.started, clockStopped: !!this.game.run.clockStopped });
         const u = loadJSON('pop_remastered_unlocked', { max: 1 });
         if (def.num > u.max) saveJSON('pop_remastered_unlocked', { max: def.num });
       }
@@ -323,8 +324,18 @@ class App {
 
   onResize() {
     this.renderer.resize();
+    this.updateRotate();
+  }
+  // aviso para girar el móvil (solo jugando en vertical)
+  updateRotate() {
     const portrait = innerHeight > innerWidth * 1.05;
-    $('rotate').classList.toggle('on', portrait && IS_MOBILE && this.screen === 'play');
+    const on = portrait && IS_MOBILE && this.screen === 'play';
+    $('rotate').classList.toggle('on', on);
+    // mientras se ve el aviso, el juego se detiene (que no te maten sin ver nada)
+    if (on !== !!this.rotPaused) {
+      this.rotPaused = on;
+      if (this.screen === 'play' && this.game) { this.game.paused = on; if (on) { this.touch.reset(); input.clear(); } }
+    }
   }
 
   // ---------------------------------------------------------------- modo de pruebas (deterministas)

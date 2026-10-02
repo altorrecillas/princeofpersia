@@ -172,6 +172,7 @@ export class Level {
 
   // ------------------------------------------------------------------ construcción
   build(quality) {
+    this.quality = quality;
     const tex = getTextures(this.theme, quality.tex);
     this.tex = tex;
     const mats = makeLevelMaterials(tex, this.theme);
@@ -782,6 +783,7 @@ class Item {
       glow.rotation.x = -Math.PI / 2; glow.position.set(0.3, 0, 0);
       this.glow = glow;
       this.mesh.add(glow);
+      this.buildSwordFx(y);
     } else {
       this.mesh = P.makePotion(it.kind);
       this.mesh.position.set(x, y, 0.45);
@@ -791,11 +793,63 @@ class Item {
     level.dynamic.add(this.mesh);
     this.phase = hash2(it.c, it.r) * 10;
   }
-  take() { this.taken = true; this.mesh.visible = false; }
+  // la espada del suelo se ve de lejos: destello que recorre la hoja, columna de luz y motas doradas
+  buildSwordFx(y) {
+    const m = this.mesh;
+    m.updateMatrix();
+    this.hilt = new THREE.Vector3(0, 0.06, 0).applyMatrix4(m.matrix);
+    this.tip = new THREE.Vector3(0.1, 0.78, 0).applyMatrix4(m.matrix);
+    this.hilt.y = this.tip.y = y + 0.07;
+    const fx = this.fx = new THREE.Group();
+    const cx = (this.hilt.x + this.tip.x) / 2, cz = (this.hilt.z + this.tip.z) / 2;
+    this.glint = P.makeSparkle(new THREE.Color(3.2, 2.8, 2.0), 0.5);
+    this.flare = P.makeSparkle(new THREE.Color(3.0, 2.4, 1.4), 0.9);
+    const beamMat = new THREE.MeshBasicMaterial({ map: P.getBeamTexture(), color: new THREE.Color(1.0, 0.82, 0.45), transparent: true, opacity: 0.25, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+    this.beam = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.9), beamMat);
+    this.beam.position.set(cx, y + 0.95, cz - 0.05);
+    this.beam.renderOrder = 4;
+    this.motes = [];
+    for (let i = 0; i < 7; i++) {
+      const sp = P.makeSparkle(new THREE.Color(2.2, 1.7, 0.9), 0.09);
+      sp.userData = { ox: (hash2(i, this.c, 3) - 0.5) * 0.8, oz: (hash2(i, this.r, 5) - 0.5) * 0.25, ph: i / 7, sp: 0.32 + hash2(i, 7, 9) * 0.2 };
+      fx.add(sp);
+      this.motes.push(sp);
+    }
+    this.fxBase = new THREE.Vector3(cx, y, cz);
+    fx.add(this.glint, this.flare, this.beam);
+    this.level.dynamic.add(fx);
+  }
+  take() { this.taken = true; this.mesh.visible = false; if (this.fx) this.fx.visible = false; }
   update(dt) {
     if (this.taken) return;
     const t = this.level.time + this.phase;
-    if (this.kind === 'sword') { if (this.glow) this.glow.material.opacity = 0.25 + Math.sin(t * 2.5) * 0.12; return; }
+    if (this.kind === 'sword') {
+      if (this.glow) this.glow.material.opacity = 0.42 + Math.sin(t * 2.5) * 0.16;
+      if (!this.fx) return;
+      // destello que recorre la hoja cada 2,2 s y estalla en la punta
+      const cyc = (this.level.time % 2.2) / 0.55;
+      const g = this.glint, f = this.flare;
+      if (cyc < 1) {
+        g.visible = true;
+        g.position.lerpVectors(this.hilt, this.tip, smooth(cyc));
+        g.scale.setScalar(0.18 + Math.sin(cyc * Math.PI) * 0.42);
+        g.material.rotation = cyc * 0.8;
+      } else g.visible = false;
+      const fk = (cyc - 0.85) / 0.6;
+      if (fk > 0 && fk < 1) {
+        f.visible = true; f.position.copy(this.tip);
+        const k = Math.sin(fk * Math.PI);
+        f.scale.setScalar(0.2 + k * 0.85); f.material.opacity = k; f.material.rotation = fk * 0.6 + 0.4;
+      } else f.visible = false;
+      // sin posprocesado (calidad baja) no hay resplandor que la realce: algo más intensa
+      this.beam.material.opacity = (this.level.quality?.post ? 0.2 : 0.7) + Math.sin(t * 1.7) * (this.level.quality?.post ? 0.07 : 0.15);
+      for (const sp of this.motes) {
+        const u = sp.userData, ph = (this.level.time * u.sp + u.ph) % 1;
+        sp.position.set(this.fxBase.x + u.ox + Math.sin(ph * 6 + u.ph * 9) * 0.05, this.fxBase.y + 0.05 + ph * 1.3, this.fxBase.z + u.oz);
+        sp.material.opacity = Math.sin(ph * Math.PI) * 0.9;
+      }
+      return;
+    }
     const u = this.mesh.userData;
     u.glow.material.opacity = 0.45 + Math.sin(t * 3) * 0.15;
     u.liquid.material.emissiveIntensity = 1.2 + Math.sin(t * 4) * 0.3;

@@ -73,6 +73,54 @@ export function getGlowTexture() {
   return glowTex;
 }
 
+// destello en estrella (cuatro puntas finas y núcleo brillante) para objetos que hay que ver de lejos
+let starTex = null;
+export function getStarTexture() {
+  if (starTex) return starTex;
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const ctx = c.getContext('2d');
+  ctx.globalCompositeOperation = 'lighter';
+  const core = ctx.createRadialGradient(64, 64, 0, 64, 64, 30);
+  core.addColorStop(0, 'rgba(255,255,255,1)'); core.addColorStop(0.3, 'rgba(255,245,220,0.55)'); core.addColorStop(1, 'rgba(255,230,180,0)');
+  ctx.fillStyle = core; ctx.fillRect(0, 0, 128, 128);
+  const ray = (ang, len, w, a) => {
+    ctx.save(); ctx.translate(64, 64); ctx.rotate(ang);
+    const g = ctx.createLinearGradient(-len, 0, len, 0);
+    g.addColorStop(0, 'rgba(255,240,210,0)'); g.addColorStop(0.5, `rgba(255,255,255,${a})`); g.addColorStop(1, 'rgba(255,240,210,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(-len, 0); ctx.lineTo(0, -w); ctx.lineTo(len, 0); ctx.lineTo(0, w); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  };
+  ray(0, 62, 3.2, 1); ray(Math.PI / 2, 62, 3.2, 1); ray(Math.PI / 4, 34, 2, 0.6); ray(-Math.PI / 4, 34, 2, 0.6);
+  starTex = new THREE.CanvasTexture(c);
+  starTex.colorSpace = THREE.SRGBColorSpace;
+  return starTex;
+}
+export function makeSparkle(color, size) {
+  const m = new THREE.SpriteMaterial({ map: getStarTexture(), color, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+  const sp = new THREE.Sprite(m);
+  sp.scale.setScalar(size);
+  sp.renderOrder = 7;
+  return sp;
+}
+// columna de luz suave que se desvanece hacia arriba (baliza de objeto importante)
+let beamTex = null;
+export function getBeamTexture() {
+  if (beamTex) return beamTex;
+  const c = document.createElement('canvas'); c.width = 64; c.height = 128;
+  const ctx = c.getContext('2d');
+  const v = ctx.createLinearGradient(0, 128, 0, 0);
+  v.addColorStop(0, 'rgba(255,255,255,1)'); v.addColorStop(0.25, 'rgba(255,255,255,0.45)'); v.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = v; ctx.fillRect(0, 0, 64, 128);
+  ctx.globalCompositeOperation = 'destination-in';
+  const h = ctx.createLinearGradient(0, 0, 64, 0);
+  h.addColorStop(0, 'rgba(0,0,0,0)'); h.addColorStop(0.5, 'rgba(0,0,0,1)'); h.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = h; ctx.fillRect(0, 0, 64, 128);
+  beamTex = new THREE.CanvasTexture(c);
+  beamTex.colorSpace = THREE.SRGBColorSpace;
+  return beamTex;
+}
+
 export function makeGlow(color, size, opacity = 1) {
   const m = new THREE.MeshBasicMaterial({
     map: getGlowTexture(), color, transparent: true, opacity, depthWrite: false, blending: THREE.AdditiveBlending,

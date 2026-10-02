@@ -165,7 +165,7 @@ input[type=range] { accent-color: var(--gold); }
 
 #rotate { position: fixed; inset: 0; z-index: 70; display: none; align-items: center; justify-content: center; background: #0b0a10; }
 #rotate.on { display: flex; }
-.rbox { text-align: center; color: var(--gold2); font-family: 'Cinzel', serif; }
+.rbox { text-align: center; color: var(--gold2); font-family: 'Cinzel', serif; padding: 0 24px; max-width: 320px; line-height: 1.4; }
 .phone { width: 44px; height: 76px; border: 3px solid var(--gold2); border-radius: 8px; margin: 0 auto 16px; animation: rot 1.6s ease-in-out infinite; }
 @keyframes rot { 50% { transform: rotate(-90deg); } }
 

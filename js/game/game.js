@@ -137,7 +137,7 @@ export class Game {
     sharedUniforms.uTime.value = this.time;
     const I = this.input;
     // tiempo de la partida
-    if ((this.state === 'play' || this.state === 'dead') && !this.script.noTimer && !this.timerStopped && this.settings.timer && this.run.timeLeft > 0) {
+    if ((this.state === 'play' || this.state === 'dead') && !this.script.noTimer && !this.timerStopped && !this.run.clockStopped && this.settings.timer && this.run.timeLeft > 0) {
       const before = this.run.timeLeft;
       this.run.timeLeft = Math.max(0, this.run.timeLeft - dt);
       this.checkTimeMessages(before, this.run.timeLeft);

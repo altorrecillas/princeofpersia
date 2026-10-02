@@ -558,5 +558,6 @@ export class Character {
   dispose() {
     this.root.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
     for (const m of this.mats) m.dispose();
+    this.skeleton?.dispose();   // libera la textura de huesos de la malla con esqueleto
   }
 }
