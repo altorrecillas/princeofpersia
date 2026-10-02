@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0a10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Prince of Persia Remastered: remake fan en 3D del clásico de 1989, hecho con Three.js. Se juega en el navegador del móvil o del ordenador.">
+<title>Prince of Persia · Remastered</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/build/three.module.min.js", "three/addons/": "./vendor/three/jsm/" } }
+</script>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="vigCss"></div>
+<div id="flashCss"></div>
+<div id="fade" class="on"></div>
+
+<!-- ===================== HUD ===================== -->
+<div id="hud">
+  <div id="hp" class="tris"></div>
+  <div id="timer"><svg viewBox="0 0 24 24"><path d="M6 2h12v2c0 3-2 5-4.5 7.5v1C16 15 18 17 18 20v2H6v-2c0-3 2-5 4.5-7.5v-1C8 9 6 7 6 4V2zm2 2c0 2 1.6 3.8 4 6 2.4-2.2 4-4 4-6H8zm4 10c-2.4 2.2-4 4-4 6h8c0-2-1.6-3.8-4-6z"/></svg><span>60:00</span></div>
+  <div id="enemy"><span id="ename">Guardia</span><div id="ehp" class="tris"></div></div>
+  <div id="banner"></div>
+  <div id="msg"></div>
+  <div id="toast"></div>
+  <div id="prompt"></div>
+</div>
+<button id="btnPause" aria-label="Pausa" style="display:none"><i></i><i></i></button>
+
+<!-- ===================== CONTROLES TÁCTILES ===================== -->
+<div id="touch">
+  <div id="dpad">
+    <div class="ring"></div>
+    <b class="ar up"></b><b class="ar down"></b><b class="ar left"></b><b class="ar right"></b>
+    <div id="knob"></div>
+  </div>
+  <div id="btns">
+    <button class="tb" id="btnAct" data-act="action"><span>ACCIÓN</span></button>
+    <button class="tb big" id="btnJump" data-act="jump"><span>SALTAR</span></button>
+  </div>
+</div>
+
+<!-- ===================== PANTALLAS ===================== -->
+<div id="loading" class="screen on">
+  <div class="logo small"><div class="l1">Prince <em>of</em> Persia</div><div class="l2">Remastered</div></div>
+  <div class="loadbox"><div id="loadBar"></div></div>
+  <p id="loadText">Preparando el palacio…</p>
+  <noscript><p>Este juego necesita JavaScript.</p></noscript>
+</div>
+
+<div id="title" class="screen">
+  <div class="vignette"></div>
+  <div class="titlebox">
+    <div class="logo"><div class="l0">— Una hora · Un palacio · Una princesa —</div><div class="l1">Prince <em>of</em> Persia</div><div class="l2">Remastered</div></div>
+    <nav class="menu">
+      <button id="btnContinue" class="mbtn">Continuar <small></small></button>
+      <button id="btnNew" class="mbtn primary">Nueva partida</button>
+      <button id="btnLevels" class="mbtn">Elegir nivel</button>
+      <button id="btnOptions" class="mbtn">Opciones</button>
+      <button id="btnHelp" class="mbtn">Cómo jugar</button>
+      <button id="btnCredits" class="mbtn">Créditos</button>
+    </nav>
+  </div>
+  <div class="foot">Remake fan del clásico de Jordan Mechner (1989) · Todo generado por código con Three.js</div>
+</div>
+
+<div id="levels" class="screen panelscreen">
+  <div class="panel">
+    <h2>Elegir nivel</h2>
+    <p class="sub">Los niveles se desbloquean al llegar a ellos.</p>
+    <div id="levelList"></div>
+    <button id="btnLevelsBack" class="mbtn">Volver</button>
+  </div>
+</div>
+
+<div id="options" class="screen panelscreen">
+  <div class="panel">
+    <h2>Opciones</h2>
+    <label class="row"><span>Calidad gráfica</span>
+      <select data-set="quality"><option value="low">Baja (móviles antiguos)</option><option value="medium">Media</option><option value="high">Alta</option></select></label>
+    <label class="row"><span>Música</span><input type="range" min="0" max="1" step="0.05" data-set="music"></label>
+    <label class="row"><span>Efectos</span><input type="range" min="0" max="1" step="0.05" data-set="sfx"></label>
+    <label class="row"><span>Cámara</span>
+      <select data-set="zoom"><option value="near">Cerca</option><option value="normal">Normal</option><option value="far">Lejos</option></select></label>
+    <label class="row"><span>Límite de 60 minutos</span><input type="checkbox" data-set="timer"></label>
+    <label class="row"><span>Agarrarse solo a los bordes al caer</span><input type="checkbox" data-set="autoGrab"></label>
+    <label class="row"><span>Ayuda en combate (paradas automáticas)</span><input type="checkbox" data-set="assist"></label>
+    <label class="row"><span>Vibración</span><input type="checkbox" data-set="vibrate"></label>
+    <label class="row"><span>Controles táctiles</span>
+      <select data-set="touch"><option value="auto">Automático</option><option value="on">Siempre</option><option value="off">Nunca</option></select></label>
+    <p class="sub">Cambiar la calidad recarga el juego (la partida guardada se conserva).</p>
+    <button id="btnOptionsBack" class="mbtn">Volver</button>
+  </div>
+</div>
+
+<div id="help" class="screen panelscreen">
+  <div class="panel wide">
+    <h2>Cómo jugar</h2>
+    <div class="cols">
+      <div>
+        <h3>Controles</h3>
+        <table class="keys">
+          <tr><td>Correr</td><td>← → <small>(A D)</small></td></tr>
+          <tr><td>Saltar hacia delante</td><td>Espacio <small>(Z)</small> · botón SALTAR</td></tr>
+          <tr><td>Saltar hacia arriba / trepar</td><td>↑ <small>(W)</small></td></tr>
+          <tr><td>Agacharse / descolgarse por un borde</td><td>↓ <small>(S)</small></td></tr>
+          <tr><td>Paso con cuidado</td><td>ACCIÓN + dirección <small>(Mayús)</small></td></tr>
+          <tr><td>Beber / coger</td><td>ACCIÓN junto al objeto</td></tr>
+          <tr><td>Agarrarse al caer</td><td>Mantén ACCIÓN</td></tr>
+          <tr><td>Pausa</td><td>Esc · P · botón II</td></tr>
+        </table>
+        <h3>Esgrima</h3>
+        <table class="keys">
+          <tr><td>Atacar</td><td>ACCIÓN</td></tr>
+          <tr><td>Parar (bloquear)</td><td>↑ o PARAR cuando el enemigo alza la espada</td></tr>
+          <tr><td>Avanzar / retroceder</td><td>→ / ←</td></tr>
+          <tr><td>Envainar</td><td>↓</td></tr>
+        </table>
+        <p class="tip">Tras una parada, atacar enseguida es un contraataque más rápido.</p>
+      </div>
+      <div>
+        <h3>Reglas del palacio</h3>
+        <ul>
+          <li>Tienes <b>60 minutos</b> para salvar a la princesa. Si mueres, repites el nivel, pero el reloj sigue corriendo.</li>
+          <li>Caer una planta no duele; dos plantas te hieren; tres son mortales.</li>
+          <li>Los <b>pinchos</b> salen al acercarte: sáltalos o crúzalos con pasos cuidadosos.</li>
+          <li>Las <b>cuchillas</b> se cierran a ritmo: espera tu momento.</li>
+          <li>Las <b>baldosas sueltas</b> tiemblan y caen: cruza deprisa. Saltando bajo una baldosa del techo la haces caer.</li>
+          <li>Las <b>placas</b> con rombo abren rastrillos durante unos segundos; las de aspa los cierran de golpe.</li>
+          <li>Pociones: <span class="pr">roja</span> cura, <span class="pr big">roja grande</span> aumenta tu vida, <span class="pb">azul</span> es veneno, <span class="pg">verde</span> te hace ligero como una pluma, <span class="pv">violeta</span> pone el mundo del revés.</li>
+          <li>Salta alcanzando los bordes: con carrerilla cruzas huecos de tres baldosas si te agarras al final.</li>
+          <li>Las columnas de bordes apilados se trepan con ↑ mirando hacia ellas y se bajan descolgándote (↓) y soltándote (↓ otra vez).</li>
+        </ul>
+      </div>
+    </div>
+    <button id="btnHelpBack" class="mbtn">Volver</button>
+  </div>
+</div>
+
+<div id="credits" class="screen panelscreen">
+  <div class="panel">
+    <h2>Créditos</h2>
+    <p>Remake fan en 3D de <b>Prince of Persia</b> (1989), el clásico creado por <b>Jordan Mechner</b>.</p>
+    <p>Programado desde cero con <b>Three.js</b>. Los <b>14 niveles</b> siguen la distribución del juego original de DOS (datos de niveles del proyecto libre SDLPoP). Personajes, animaciones, escenarios, texturas, efectos, música y sonidos son nuevos y se generan por código.</p>
+    <p>Fuentes: Cinzel y Cormorant Garamond (SIL Open Font License).</p>
+    <p class="sub">Proyecto de aficionado sin ánimo de lucro. No está afiliado ni respaldado por Ubisoft ni por Jordan Mechner. «Prince of Persia» es una marca de sus respectivos propietarios.</p>
+    <button id="btnCreditsBack" class="mbtn">Volver</button>
+  </div>
+</div>
+
+<div id="story" class="screen">
+  <div id="storyText"></div>
+  <button id="btnStorySkip" class="skip">Saltar ›</button>
+</div>
+
+<div id="cutscene" class="screen"></div>
+
+<div id="pause" class="screen panelscreen">
+  <div class="panel">
+    <h2>Pausa</h2>
+    <button id="btnResume" class="mbtn primary">Continuar</button>
+    <button id="btnRestart" class="mbtn">Reiniciar nivel</button>
+    <button id="btnPauseOptions" class="mbtn">Opciones</button>
+    <button id="btnPauseHelp" class="mbtn">Cómo jugar</button>
+    <button id="btnQuit" class="mbtn">Salir al menú</button>
+  </div>
+</div>
+
+<div id="ending" class="screen panelscreen">
+  <div class="panel">
+    <h2>¡Has salvado a la princesa!</h2>
+    <p>Jaffar ha caído y el palacio vuelve a ser libre. Cuando el Sultán regrese de la guerra, encontrará a su hija sana y salva… junto al joven que arriesgó su vida por ella.</p>
+    <p id="endStats"></p>
+    <h3 class="fin">FIN</h3>
+    <button id="btnEndBack" class="mbtn primary">Volver al menú</button>
+  </div>
+</div>
+
+<div id="over" class="screen panelscreen">
+  <div class="panel">
+    <h2>Se acabó el tiempo</h2>
+    <p>La arena del reloj se ha agotado. Jaffar se ha salido con la suya y la princesa…<br>Pero toda leyenda merece otra oportunidad.</p>
+    <button id="btnOverBack" class="mbtn primary">Volver al menú</button>
+  </div>
+</div>
+
+<div id="dead"><div class="dbox"><div id="deadMsg">Has muerto</div><div class="dsub">Pulsa ACCIÓN o toca la pantalla para reintentarlo</div></div></div>
+<div id="rotate"><div class="rbox"><div class="phone"></div><p>Gira el móvil para jugar en horizontal</p></div></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

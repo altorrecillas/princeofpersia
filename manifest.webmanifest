@@ -1,0 +1,17 @@
+{
+  "name": "Prince of Persia · Remastered",
+  "short_name": "Prince of Persia",
+  "description": "Remake fan en 3D del clásico de 1989, hecho con Three.js.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0b0a10",
+  "theme_color": "#0b0a10",
+  "lang": "es",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
