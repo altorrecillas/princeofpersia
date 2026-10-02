@@ -130,7 +130,7 @@ export class Prince extends Actor {
     // pasos
     const ph = (this.anim.t % 0.64) / 0.64;
     const half = ph < 0.5 ? 0 : 1;
-    if (half !== this.stepPhase) { this.stepPhase = half; this.game.sfx('step', this); this.game.fx.dust(this.x - this.face * 0.15, this.y, 0.22); }
+    if (half !== this.stepPhase) { this.stepPhase = half; this.game.fx.dust(this.x - this.face * 0.15, this.y, 0.22); }
   }
 
   startSkid() {
@@ -192,8 +192,7 @@ export class Prince extends Actor {
   s_step(dt) {
     const p = clamp(this.st / 0.55, 0, 1);
     this.x = lerp(this.stepFrom, this.stepTo, smooth(p));
-    if (p > 0.45 && !this.stepSnd) { this.stepSnd = true; this.game.sfx('stepSoft', this); }
-    if (p >= 1) { this.stepSnd = false; this.setState('stand'); }
+    if (p >= 1) this.setState('stand');
   }
   s_teeter() { if (this.st > 0.8) this.setState('stand'); }
 

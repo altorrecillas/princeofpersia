@@ -6,7 +6,7 @@ const midiHz = (m) => 440 * Math.pow(2, (m - 69) / 12);
 // refuerzo por efecto (medido renderizando cada sonido: los más débiles se suben)
 const SFX_GAIN = 2.2;
 const BOOST = {
-  step: 2, stepSoft: 4, jump: 5, landSoft: 2, hurt: 5, gateTick: 4, pick: 6, swing: 2, vanish: 3,
+  jump: 5, landSoft: 2, hurt: 5, gateTick: 4, pick: 6, swing: 2, vanish: 3,
   looseRattle: 3, skid: 1.5, climb: 2, looseShake: 2, spikes: 1.5, chop: 1.6, bones: 1.5, plate: 1.5,
 };
 const deg = (d, oct = 0) => ROOT + 12 * (oct + Math.floor(d / 7)) + HIJAZ[((d % 7) + 7) % 7];
@@ -335,8 +335,6 @@ export class Audio {
 
 // ======================================================================== catálogo de efectos
 const SFX = {
-  step(t, pan, a) { const o = this.out(pan, 0.12, 0.5 * a); this.noise(o, t, 0.07, { type: 'lowpass', f0: 700, vol: 0.9 }); this.tone(o, t, 0.06, { f0: 90, f1: 60, vol: 0.4 }); },
-  stepSoft(t, pan, a) { const o = this.out(pan, 0.1, 0.3 * a); this.noise(o, t, 0.06, { type: 'lowpass', f0: 600, vol: 0.7 }); },
   skid(t, pan, a) { const o = this.out(pan, 0.15, 0.35 * a); this.noise(o, t, 0.32, { type: 'bandpass', f0: 1800, f1: 700, q: 0.8, vol: 0.7, curve: 'lin' }); },
   jump(t, pan, a) { const o = this.out(pan, 0.15, 0.35 * a); this.noise(o, t, 0.22, { type: 'bandpass', f0: 500, f1: 1800, q: 0.7, vol: 0.6 }); },
   land(t, pan, a) { const o = this.out(pan, 0.25, 0.7 * a); this.noise(o, t, 0.16, { type: 'lowpass', f0: 500, vol: 0.9 }); this.tone(o, t, 0.15, { f0: 110, f1: 45, vol: 0.7 }); },
