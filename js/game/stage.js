@@ -63,15 +63,22 @@ export class Stage {
     const s = this.scene;
     if (theme === 'palace') {
       s.fog.color.set(0x0a0c18); s.fog.density = 0.028;
-      this.hemi.color.set(0x7d8cc4); this.hemi.groundColor.set(0x3a2a1a); this.hemi.intensity = 1.15;
+      this.hemi.color.set(0x7d8cc4); this.hemi.groundColor.set(0x3a2a1a); this.hemiBase = 1.15;
       this.key.color.set(0xb4c4ff); this.key.intensity = 0.8;
       s.environmentIntensity = 0.45;
     } else {
       s.fog.color.set(0x080a12); s.fog.density = 0.03;
-      this.hemi.color.set(0x7482a6); this.hemi.groundColor.set(0x3a2c20); this.hemi.intensity = 1.45;
+      this.hemi.color.set(0x7482a6); this.hemi.groundColor.set(0x3a2c20); this.hemiBase = 1.45;
       this.key.color.set(0xb8c6ff); this.key.intensity = 0.75;
       s.environmentIntensity = 0.22;
     }
+    this.setBrightness(this.brightness ?? 1, this.ambientGain ?? 0.8);
+  }
+
+  // brillo del jugador: sube la luz ambiente (en calidad baja, sin posprocesado, es lo que más aclara)
+  setBrightness(b, gain) {
+    this.brightness = b; this.ambientGain = gain;
+    this.hemi.intensity = (this.hemiBase ?? 0.9) * Math.max(0.5, 1 + (b - 1) * gain);
   }
 
   setSources(list) {

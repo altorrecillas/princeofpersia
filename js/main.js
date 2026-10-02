@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { QUALITY, defaultQuality, IS_TOUCH, IS_MOBILE, DEBUG } from './core/config.js';
 import { Renderer } from './core/renderer.js';
+import { clamp } from './core/utils.js';
 import { input } from './core/input.js';
 import { audio } from './core/audio.js';
 import { Stage } from './game/stage.js';
@@ -22,7 +23,7 @@ function saveJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } ca
 class App {
   constructor() {
     this.settings = loadJSON(SET_KEY, {
-      quality: defaultQuality(), music: 0.6, sfx: 0.85, timer: true, zoom: 'normal', vibrate: true, autoGrab: IS_TOUCH, touch: 'auto', assist: IS_TOUCH,
+      quality: defaultQuality(), music: 0.6, sfx: 0.85, timer: true, zoom: 'normal', vibrate: true, autoGrab: IS_TOUCH, touch: 'auto', assist: IS_TOUCH, brightness: 1,
     });
     if (!QUALITY[this.settings.quality]) this.settings.quality = defaultQuality();
     const qp = new URLSearchParams(location.search).get('q');
@@ -51,6 +52,7 @@ class App {
     this.onResize();
     this.bindUI();
     audio.setVolumes(this.settings.music, this.settings.sfx);
+    this.applyBrightness();
 
     // carga: texturas procedurales de los dos ambientes
     const steps = [
@@ -136,18 +138,40 @@ class App {
     // opciones
     for (const el of document.querySelectorAll('[data-set]')) {
       const k = el.dataset.set;
+      // el brillo se ve en directo mientras se arrastra el deslizador
+      if (k === 'brightness') el.addEventListener('input', () => { this.settings.brightness = parseFloat(el.value); this.applyBrightness(); });
       el.addEventListener('change', () => {
         let v = el.type === 'checkbox' ? el.checked : el.type === 'range' ? parseFloat(el.value) : el.value;
         this.settings[k] = v;
         if (k === 'music' || k === 'sfx') audio.setVolumes(this.settings.music, this.settings.sfx);
         if (k === 'quality') this.applyQuality(v);
         if (k === 'vibrate') window.__vibrate = v;
+        if (k === 'brightness') this.applyBrightness();
         this.saveSettings();
       });
     }
   }
 
   saveSettings() { saveJSON(SET_KEY, this.settings); }
+
+  // gradación de color del fotograma (ambiente del nivel, brillo elegido, desaturar al morir)
+  grade() {
+    const g = this.game;
+    const grade = g.level?.palace ? { exposure: 1.0, warm: 0.15, bloom: 0.5 } : { exposure: 1.0, warm: 0.1, bloom: 0.55 };
+    grade.bright = clamp(+this.settings.brightness || 1, 0.6, 2);
+    if (g.player && !g.player.alive && g.state === 'dead') grade.sat = Math.max(0.25, 1 - g.deadT * 0.5);
+    return grade;
+  }
+
+  applyBrightness() {
+    const b = clamp(+this.settings.brightness || 1, 0.6, 2);
+    // con posprocesado la curva del shader hace casi todo; sin él, la luz ambiente y la exposición
+    this.stage?.setBrightness(b, this.renderer.composer ? 0.5 : 1.3);
+    const vig = document.getElementById('vigCss');
+    if (vig) vig.style.opacity = String(clamp(1.6 - b * 0.6, 0.35, 1));
+    const lab = document.getElementById('brightVal');
+    if (lab) lab.textContent = Math.round(b * 100) + '%';
+  }
 
   applyQuality(q) {
     if (!QUALITY[q]) return;
@@ -320,7 +344,7 @@ class App {
           enemies: g.enemies.map((e) => ({ x: +e.x.toFixed(2), st: e.state, hp: e.hp, alive: e.alive })), gstate: g.state, level: g.def.id };
       },
       teleport: (c, r, face = 1) => { const lv = g.level; g.player.x = lv.cx(c); g.player.y = lv.floorY(r); g.player.setState('stand'); g.player.onGround = true; g.player.snapFace(face); g.snapCamera(); },
-      render: () => { this.renderer.render(this.stage.scene, g.camera, g.time, {}); },
+      render: () => { this.renderer.render(this.stage.scene, g.camera, g.time, this.grade()); },
     };
   }
 
@@ -328,7 +352,7 @@ class App {
   loop(now) {
     requestAnimationFrame((t) => this.loop(t));
     if (this.testMode && this.screen === 'play') {
-      this.renderer.render(this.stage.scene, this.game.camera, this.game.time, {});
+      this.renderer.render(this.stage.scene, this.game.camera, this.game.time, this.grade());
       window.__frames = (window.__frames || 0) + 1;
       return;
     }
@@ -351,9 +375,7 @@ class App {
     // flash y fundidos
     const R = this.renderer;
     R.flash.amt = Math.max(0, R.flash.amt - dt * 1.6);
-    const grade = g.level?.palace ? { exposure: 1.0, warm: 0.15, bloom: 0.5 } : { exposure: 1.0, warm: 0.1, bloom: 0.55 };
-    if (g.player && !g.player.alive && g.state === 'dead') grade.sat = Math.max(0.25, 1 - g.deadT * 0.5);
-    R.render(this.stage.scene, g.camera, g.time, grade);
+    R.render(this.stage.scene, g.camera, g.time, this.grade());
     if (!R.composer) $('flashCss').style.opacity = R.flash.amt * 0.6;
     R.adapt(dt);
     window.__frames = (window.__frames || 0) + 1;

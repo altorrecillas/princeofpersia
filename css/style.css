@@ -83,6 +83,7 @@ body.lowq #vigCss { display: block; }
 .sub { color: var(--muted); font-size: .85em; font-style: italic; }
 .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid rgba(214,170,78,.15); text-align: left; }
 .row select, .row input[type=range] { min-width: 44%; }
+.row small { color: var(--gold2); margin-left: 6px; font-size: .8em; }
 select { background: #1c1510; color: var(--text); border: 1px solid var(--gold3); border-radius: 3px; padding: 4px 6px; font: inherit; font-size: 16px; }
 input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--gold); }
 input[type=range] { accent-color: var(--gold); }

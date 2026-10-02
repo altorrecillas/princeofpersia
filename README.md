@@ -85,7 +85,9 @@ La partida se guarda al empezar cada nivel (nivel, minutos restantes, vida máxi
 | Media | Bloom, gradación de color, viñeta y grano, sombras de los personajes, 5 luces. Por defecto en el móvil |
 | Alta | Todo lo anterior con MSAA ×4, sombras de 2048 px y 7 luces. Por defecto en el ordenador |
 
-Se cambia en **Opciones** o por URL: `?q=low`, `?q=medium` o `?q=high`. La resolución interna se ajusta sola para mantener la fluidez (`?nodynres=1` lo desactiva).
+Se cambia en **Opciones** o por URL: `?q=low`, `?q=medium` o `?q=high`.
+
+Si en tu pantalla el juego se ve demasiado oscuro, sube el **Brillo** en Opciones (del 60 % al 200 %, se ve el cambio al momento). Aclara sobre todo las zonas en sombra, sin quemar la luz de las antorchas, y funciona en las tres calidades. La resolución interna se ajusta sola para mantener la fluidez (`?nodynres=1` lo desactiva).
 
 ## Publicarlo en GitHub
 

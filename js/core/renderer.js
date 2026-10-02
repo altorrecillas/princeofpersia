@@ -19,6 +19,7 @@ const FinalShader = {
     uFade: { value: 0 },
     uSat: { value: 1.0 },
     uWarm: { value: 0.0 },
+    uBright: { value: 1.0 },
     uLift: { value: new THREE.Vector3(0.012, 0.014, 0.024) },
     uGain: { value: new THREE.Vector3(1.04, 1.0, 0.95) },
     uRes: { value: new THREE.Vector2(1, 1) },
@@ -28,7 +29,7 @@ const FinalShader = {
     void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: /* glsl */`
     uniform sampler2D tDiffuse;
-    uniform float uTime, uExposure, uVignette, uGrain, uCA, uFlashAmt, uFade, uSat, uWarm;
+    uniform float uTime, uExposure, uVignette, uGrain, uCA, uFlashAmt, uFade, uSat, uWarm, uBright;
     uniform vec3 uFlash, uLift, uGain;
     uniform vec2 uRes;
     varying vec2 vUv;
@@ -58,9 +59,11 @@ const FinalShader = {
       col += vec3(0.05, 0.02, -0.03) * uWarm;
       // curva en S suave
       col = mix(col, col*col*(3.0-2.0*col), 0.22);
-      // viñeta
+      // brillo elegido por el jugador: curva gamma que levanta las sombras y respeta las luces
+      col = pow(max(col, 0.0), vec3(1.0 / uBright));
+      // viñeta (más suave cuanto más brillo se pide)
       float vig = smoothstep(0.95, 0.25, length(d * vec2(1.0, 0.8)) * uVignette * 1.15);
-      col *= mix(0.58, 1.0, vig);
+      col *= mix(0.58 + max(uBright - 1.0, 0.0) * 0.35, 1.0, vig);
       // destello (daño, pociones)
       col = mix(col, uFlash, uFlashAmt * (0.35 + 0.65 * (1.0 - vig)));
       // grano
@@ -162,13 +165,14 @@ export class Renderer {
       u.uSat.value = grade.sat ?? 1.0;
       u.uWarm.value = grade.warm ?? 0.0;
       u.uVignette.value = grade.vignette ?? 0.9;
+      u.uBright.value = grade.bright ?? 1.0;
       if (this.bloom) {
         this.bloom.strength = grade.bloom ?? 0.55;
         this.bloom.threshold = grade.bloomThreshold ?? 1.35;
       }
       this.composer.render();
     } else {
-      this.renderer.toneMappingExposure = 1.3 * (grade.exposure ?? 1.0);
+      this.renderer.toneMappingExposure = 1.3 * (grade.exposure ?? 1.0) * Math.pow(grade.bright ?? 1.0, 0.8);
       this.renderer.render(scene, camera);
     }
   }
