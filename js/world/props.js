@@ -169,40 +169,56 @@ export function makeTorch(mats, palace) {
 
 // ---------------------------------------------------------------- rastrillo (puerta de barrotes)
 export function makeGateMesh(mats, clipPlane) {
+  // rastrillo como en el original: atraviesa el pasillo de la pared del fondo al borde delantero
+  // (plano YZ), así que se ve de perfil y en perspectiva en lugar de como una ventana
   const g = new THREE.Group();
-  const w = TW * 0.78, h = HEADROOM;
+  const h = HEADROOM;
+  const z0 = ZB + 0.1, z1 = ZF - 0.06, depth = z1 - z0, zc = (z0 + z1) / 2;
   const bars = [];
-  const nb = 6;
-  for (let i = 0; i < nb; i++) {
-    const x = -w / 2 + (i + 0.5) * (w / nb);
-    const b = new THREE.CylinderGeometry(0.022, 0.022, h - 0.06, 6); b.translate(x, h / 2 + 0.03, 0);
-    const tip = new THREE.ConeGeometry(0.035, 0.1, 6); tip.rotateX(Math.PI); tip.translate(x, 0.02, 0);
-    bars.push(b, tip);
-  }
-  for (let j = 0; j < 5; j++) {
-    const y = 0.25 + j * (h - 0.4) / 4;
-    const band = new THREE.BoxGeometry(w + 0.04, 0.045, 0.06); band.translate(0, y, 0);
-    bars.push(band);
-    for (let i = 0; i < nb; i++) {
-      const x = -w / 2 + (i + 0.5) * (w / nb);
-      const rivet = new THREE.SphereGeometry(0.022, 6, 4); rivet.translate(x, y, 0.03);
-      bars.push(rivet);
+  // doble fila de barrotes (con grosor), para que también se lea de frente como en el original
+  const nb = Math.round(depth / 0.3);
+  for (const [bx, off] of [[-0.065, 0], [0.065, 0.5]]) {
+    for (let i = 0; i <= nb; i++) {
+      const z = z0 + Math.min(1, (i + off * (i < nb ? 1 : 0)) / nb) * depth;
+      const b = new THREE.CylinderGeometry(0.022, 0.022, h - 0.08, 6); b.translate(bx, h / 2 + 0.04, z);
+      const tip = new THREE.ConeGeometry(0.034, 0.12, 6); tip.rotateX(Math.PI); tip.translate(bx, 0.02, z);
+      bars.push(b, tip);
     }
   }
+  const nBands = 8;
+  for (let j = 0; j < nBands; j++) {
+    const y = 0.18 + j * (h - 0.34) / (nBands - 1);
+    const band = new THREE.BoxGeometry(0.19, 0.045, depth + 0.04); band.translate(0, y, zc);
+    bars.push(band);
+    for (let i = 0; i <= nb; i += 2) {
+      const rivet = new THREE.SphereGeometry(0.02, 6, 4); rivet.translate(0.1, y, z0 + (i / nb) * depth);
+      const rivet2 = rivet.clone(); rivet2.translate(-0.2, 0, 0);
+      bars.push(rivet, rivet2);
+    }
+  }
+  // travesaño inferior reforzado
+  const foot = new THREE.BoxGeometry(0.2, 0.08, depth + 0.04); foot.translate(0, 0.1, zc);
+  bars.push(foot);
   const mat = mats.metal.clone();
   mat.clippingPlanes = [clipPlane];
   mat.clipShadows = true;
   const grid = new THREE.Mesh(mergeGeometries(bars), mat);
   grid.castShadow = true;
   g.add(grid);
-  // marco de piedra
+  // viga superior por la que sube la reja, guías de hierro y ranura en el suelo
   const frameMat = mats.stoneTrim;
-  const postG = new RoundedBoxGeometry(0.16, h, 0.34, 2, 0.03);
-  const p1 = new THREE.Mesh(postG, frameMat); p1.position.set(-w / 2 - 0.1, h / 2, 0);
-  const p2 = p1.clone(); p2.position.x = w / 2 + 0.1;
-  const lintel = new THREE.Mesh(new RoundedBoxGeometry(w + 0.44, 0.24, 0.42, 2, 0.04), frameMat);
-  lintel.position.set(0, h - 0.12, 0);
-  for (const m of [p1, p2, lintel]) { m.castShadow = true; m.receiveShadow = true; g.add(m); }
+  const beam = new THREE.Mesh(new RoundedBoxGeometry(0.42, 0.26, depth + 0.16, 2, 0.04), frameMat);
+  beam.position.set(0, h - 0.13, zc);
+  const guideBack = new THREE.Mesh(new RoundedBoxGeometry(0.36, h, 0.16, 2, 0.03), frameMat);
+  guideBack.position.set(0, h / 2, ZB + 0.06);
+  const railMat = mats.metal;
+  const railG = new THREE.BoxGeometry(0.03, h - 0.26, 0.05);
+  const railF1 = new THREE.Mesh(railG, railMat); railF1.position.set(0.12, (h - 0.26) / 2, z1 + 0.03);
+  const railF2 = railF1.clone(); railF2.position.x = -0.12;
+  const slot = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.012, depth), new THREE.MeshStandardMaterial({ color: 0x0c0a08, roughness: 1 }));
+  slot.position.set(0, 0.006, zc);
+  for (const m of [beam, guideBack]) { m.castShadow = true; m.receiveShadow = true; g.add(m); }
+  g.add(railF1, railF2, slot);
   g.userData = { grid, h };
   return g;
 }

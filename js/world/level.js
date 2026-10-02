@@ -15,6 +15,10 @@ const TYPES = {
   'X': 'chopper', 'G': 'gate', 'g': 'gate', 'P': 'plate', 'D': 'drop', 'E': 'exit', 'S': 'start',
   'M': 'mirror', 'B': 'rubble', '~': 'ghost', '=': 'carpet',
 };
+// el rastrillo cruza el pasillo ligeramente girado hacia la cámara: así su reja se lee también de frente
+const GATE_YAW = 0.16;
+const GATE_LEAN = 0.12;   // el lado hacia el que se inclina la parte delantera necesita algo más de holgura
+
 const SLAB_TYPES = new Set(['floor', 'pillar', 'pillarfg', 'spikes', 'chopper', 'gate', 'plate', 'drop', 'exit', 'start', 'mirror', 'rubble', 'carpet']);
 const LINKED = new Set(['G', 'g', 'P', 'D', 'E']);
 const POTIONS = { h: 'heal', j: 'life', p: 'poison', f: 'float', u: 'flip' };
@@ -158,7 +162,7 @@ export class Level {
       if (g && g.blocks() && !opts.ignoreGates) {
         const gx = this.cx(c);
         if (d > 0 && x <= gx - 0.02) lim = Math.min(lim, gx - half * 0.75);
-        if (d < 0 && x >= gx + 0.02) lim = Math.max(lim, gx + half * 0.75);
+        if (d < 0 && x >= gx + 0.02) lim = Math.max(lim, gx + half * 0.75 + GATE_LEAN);
       }
       const m = this.mirrorAt(c, r);
       if (m && m.blocks() && !opts.throughMirror) {
@@ -448,7 +452,8 @@ class Gate {
     const yf = level.floorY(g.r);
     this.clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), yf + HEADROOM - 0.2);
     this.mesh = P.makeGateMesh(level.mats, this.clip);
-    this.mesh.position.set(level.cx(g.c), yf, 0.12);
+    this.mesh.position.set(level.cx(g.c), yf, 0);
+    this.mesh.rotation.y = GATE_YAW;
     level.dynamic.add(this.mesh);
     this.lastSound = 0;
     this.apply();
