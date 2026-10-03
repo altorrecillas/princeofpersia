@@ -130,13 +130,12 @@ export class Prince extends Actor {
     // pasos
     const ph = (this.anim.t % 0.64) / 0.64;
     const half = ph < 0.5 ? 0 : 1;
-    if (half !== this.stepPhase) { this.stepPhase = half; this.game.fx.dust(this.x - this.face * 0.15, this.y, 0.22); }
+    if (half !== this.stepPhase) { this.stepPhase = half; this.game.sfx('step', this); this.game.fx.dust(this.x - this.face * 0.15, this.y, 0.22); }
   }
 
   startSkid() {
     this.setState('skid');
     this.play('skid', { blend: 0.1, restart: true });
-    this.game.sfx('skid', this);
   }
   s_skid(dt, I) {
     this.vx = approach(this.vx, 0, 13 * dt);
@@ -150,7 +149,7 @@ export class Prince extends Actor {
     }
   }
 
-  startRunTurn() { this.setState('runTurn'); this.play('skid', { blend: 0.1, restart: true }); this.game.sfx('skid', this); this.turned = false; }
+  startRunTurn() { this.setState('runTurn'); this.play('skid', { blend: 0.1, restart: true }); this.turned = false; }
   s_runTurn(dt, I) {
     this.vx = approach(this.vx, 0, 15 * dt);
     if (this.moveGround(this.vx * dt)) this.vx = 0;
